@@ -21,18 +21,30 @@ class VoucherService
     /**
      * @param string[] $xmlContents
      * @param User $user
-     * @return Voucher[]
+     * @return array
      */
     public function storeVouchersFromXmlContents(array $xmlContents, User $user): array
     {
-        $vouchers = [];
+        $successfulVouchers = [];
+        $failedVouchers = [];
+
         foreach ($xmlContents as $xmlContent) {
-            $vouchers[] = $this->storeVoucherFromXmlContent($xmlContent, $user);
+            try {
+                $voucher = $this->storeVoucherFromXmlContent($xmlContent, $user);
+                $successfulVouchers[] = $voucher;
+            } catch (Exception $e) {
+                Log::error("Error al procesar el XML: " . $e->getMessage());
+                $failedVouchers[] = [
+                    'xml_content' => $xmlContent,
+                    'reason' => $e->getMessage(),
+                ];
+            }
         }
 
-        VouchersCreated::dispatch($vouchers, $user);
+        // Despachar evento con comprobantes exitosos y fallidos
+        VouchersCreated::dispatch($successfulVouchers, $failedVouchers, $user);
 
-        return $vouchers;
+        return $successfulVouchers;
     }
 
     public function storeVoucherFromXmlContent(string $xmlContent, User $user): Voucher
@@ -53,9 +65,9 @@ class VoucherService
             $documentID = (string) $xml->xpath('//cbc:ID')[0];
 
             $parts = explode('-', $documentID);
-             if (count($parts) !== 2) {
-                 throw new Exception("El formato de cbc:ID no es válido.");
-             }
+            if (count($parts) !== 2) {
+                throw new Exception("El formato de cbc:ID no es válido.");
+            }
             [$documentSerie, $documentNumber] = $parts;
 
             $documentTypeCode = (string) $xml->xpath('//cbc:InvoiceTypeCode')[0] ?? '';

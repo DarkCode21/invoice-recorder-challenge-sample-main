@@ -2,24 +2,24 @@
 
 namespace App\Events\Vouchers;
 
-use App\Models\User;
-use App\Models\Voucher;
+
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use App\Models\User;
 
 class VouchersCreated
 {
-    use Dispatchable;
-    use InteractsWithSockets;
-    use SerializesModels;
+    use Dispatchable, InteractsWithSockets, SerializesModels;
 
     /**
-     * @param Voucher[] $vouchers
+     * @param array $successfulVouchers
+     * @param array $failedVouchers
      * @param User $user
      */
     public function __construct(
-        public readonly array $vouchers,
+        public readonly array $successfulVouchers,
+        public readonly array $failedVouchers,
         public readonly User $user
     ) {
     }
